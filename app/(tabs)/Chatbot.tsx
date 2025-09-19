@@ -3,12 +3,10 @@ import { View, StyleSheet } from 'react-native';
 import { GiftedChat, IMessage } from 'react-native-gifted-chat';
 import axios from 'axios';
 
-// --- Configuration for Gemini API ---
-// IMPORTANT: Replace this with the key you generated from Google AI Studio
 
 const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${GEMINI_API_KEY}`;
 
-// --- Retry Logic Configuration ---
+//Retry
 const MAX_RETRIES = 3;
 const INITIAL_DELAY_MS = 1000;
 

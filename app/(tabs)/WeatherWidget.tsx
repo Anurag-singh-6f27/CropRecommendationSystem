@@ -4,10 +4,6 @@ import axios from 'axios';
 import Icon from 'react-native-vector-icons/FontAwesome5';
 
 
-// IMPORTANT: This API key is a placeholder and will not work.
-// You must replace it with your own valid API key from OpenWeatherMap.
-// Get your key here: https://home.openweathermap.org/api_keys
-
 const CITY = "Nagpur";
 
 // Define the type for the API response data

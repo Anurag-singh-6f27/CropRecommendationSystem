@@ -1,50 +1,68 @@
 import React, { Component } from 'react';
 import { View, Text, Dimensions, StyleSheet, ScrollView } from 'react-native';
 import { BarChart } from 'react-native-chart-kit';
+import { fetchTopCommoditiesByPrice } from '../services/market_api';
 
 interface CropPrice {
-  name: string;
-  pricePerKg: number; // Price in INR per kg
+  name: string;           // truncated name for axis
+  pricePerQuintal: number;
 }
 
 interface State {
   cropPrices: CropPrice[];
+  loading: boolean;
+  error?: string;
 }
 
 export default class CropPriceChart extends Component<{}, State> {
   constructor(props: {}) {
     super(props);
-    // Default prices for Nagpur (can be replaced with API fetch later)
     this.state = {
-      cropPrices: [
-        { name: 'Tomato', pricePerKg: 35 },
-        { name: 'Onion', pricePerKg: 25 },
-        { name: 'Potato', pricePerKg: 20 },
-        { name: 'Cotton', pricePerKg: 45 },
-        { name: 'Soybean', pricePerKg: 38 },
-        { name: 'Wheat', pricePerKg: 30 },
-        { name: 'Rice', pricePerKg: 32 },
-        { name: 'Chili', pricePerKg: 60 },
-        { name: 'Maize', pricePerKg: 28 },
-        { name: 'Sugarcane', pricePerKg: 22 },
-      ],
+      cropPrices: [],
+      loading: true,
     };
   }
 
-  render() {
-    const { cropPrices } = this.state;
+  async componentDidMount() {
+    try {
+      const state = 'Maharashtra';
+      const district = 'Nagpur';
+      const market = 'Katol';
 
-    // Convert price to bulk (100 kg)
-    const bulkData = cropPrices.map(c => ({
-      name: c.name,
-      price: c.pricePerKg * 100, // Price per 100 kg
-    }));
+      const topCommodities = await fetchTopCommoditiesByPrice(
+        state,
+        district,
+        market,
+        10
+      );
+
+      const cropPrices: CropPrice[] = topCommodities.map((item) => ({
+        // truncate to max 8 chars plus ellipsis to avoid overlap
+        name:
+          item.commodity.length > 8
+            ? item.commodity.slice(0, 8) + '…'
+            : item.commodity,
+        pricePerQuintal: item.highestPrice,
+      }));
+
+      this.setState({ cropPrices, loading: false });
+    } catch (err) {
+      console.error(err);
+      this.setState({ error: 'Failed to fetch prices', loading: false });
+    }
+  }
+
+  render() {
+    const { cropPrices, loading, error } = this.state;
+
+    if (loading) return <Text style={{ padding: 16 }}>Loading crop prices...</Text>;
+    if (error) return <Text style={{ padding: 16, color: 'red' }}>{error}</Text>;
 
     const data = {
-      labels: bulkData.map(c => c.name),
+      labels: cropPrices.map((c) => c.name),
       datasets: [
         {
-          data: bulkData.map(c => c.price),
+          data: cropPrices.map((c) => c.pricePerQuintal),
         },
       ],
     };
@@ -52,28 +70,29 @@ export default class CropPriceChart extends Component<{}, State> {
     return (
       <ScrollView horizontal style={{ paddingVertical: 16 }}>
         <View style={styles.container}>
-          <Text style={styles.title}>Top 10 Crop Prices (₹ per 100 kg, Nagpur)</Text>
-          <BarChart
-  data={data}
-  width={Math.max(Dimensions.get('window').width, cropPrices.length * 60)}
-  height={300}
-  yAxisLabel="₹"
-  yAxisSuffix=""      // ✅ Add this line
-  chartConfig={{
-    backgroundColor: '#F3F4F6',
-    backgroundGradientFrom: '#F3F4F6',
-    backgroundGradientTo: '#F3F4F6',
-    decimalPlaces: 0,
-    color: (opacity = 1) => `rgba(37, 99, 235, ${opacity})`,
-    labelColor: (opacity = 1) => `rgba(55, 65, 81, ${opacity})`,
-    style: { borderRadius: 16 },
-    propsForBackgroundLines: { stroke: '#E5E7EB' },
-  }}
-  style={{ borderRadius: 16 }}
-  fromZero
-  showValuesOnTopOfBars
-/>
+          <Text style={styles.title}>Top 5 Crop Prices (₹ per quintal, Katol)</Text>
 
+          <BarChart
+            data={data}
+            width={Math.max(Dimensions.get('window').width, cropPrices.length * 120)}
+            height={300}
+            yAxisLabel="₹"
+            yAxisSuffix=""   // required prop
+            chartConfig={{
+              backgroundColor: '#F3F4F6',
+              backgroundGradientFrom: '#F3F4F6',
+              backgroundGradientTo: '#F3F4F6',
+              decimalPlaces: 0,
+              color: (opacity = 1) => `rgba(37, 99, 235, ${opacity})`,
+              labelColor: (opacity = 1) => `rgba(55, 65, 81, ${opacity})`,
+              style: { borderRadius: 16 },
+              propsForBackgroundLines: { stroke: '#E5E7EB' },
+            }}
+            style={{ borderRadius: 16 }}
+            fromZero
+            showValuesOnTopOfBars
+            verticalLabelRotation={0}
+          />
         </View>
       </ScrollView>
     );

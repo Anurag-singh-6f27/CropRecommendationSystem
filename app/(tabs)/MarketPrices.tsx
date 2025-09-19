@@ -1,116 +1,134 @@
 import React, { Component } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ActivityIndicator,
+  ScrollView,
+} from 'react-native';
+import { fetchTopCommoditiesByPrice, MarketRecord } from './services/market_api';
 
-interface MarketPricesProps {
-  t: (key: string) => string;
+interface MarketPricesProps {}
+
+interface MarketPricesState {
+  data: { commodity: string; highestPrice: number; record: MarketRecord }[];
+  loading: boolean;
+  error?: string;
 }
 
-class MarketPrices extends Component<MarketPricesProps> {
+class MarketPrices extends Component<MarketPricesProps, MarketPricesState> {
+  state: MarketPricesState = {
+    data: [],
+    loading: true,
+  };
+
+  async componentDidMount() {
+    try {
+      const state = 'Maharashtra';
+      const district = 'Nagpur';
+      const market = 'Katol';
+
+      // Fetch top commodities directly for given state/district/market
+      const topCommodities = await fetchTopCommoditiesByPrice(
+        state,
+        district,
+        market,
+        3
+      );
+
+      this.setState({ data: topCommodities, loading: false }); // top 3
+    } catch (err) {
+      console.error(err);
+      this.setState({ error: 'Failed to fetch prices', loading: false });
+    }
+  }
+
   render() {
-    const { t } = this.props;
+    const { data, loading, error } = this.state;
 
     return (
       <View style={styles.container}>
-        <Text style={styles.title}>{t('market')} Prices</Text>
-        <View style={styles.listContainer}>
-          {/* Cotton Item */}
-          <View style={styles.itemContainer}>
-            <Text style={styles.itemText}>Cotton (कापूस)</Text>
-            <View style={styles.priceContainer}>
-              <Text style={styles.priceGreen}>₹5,200/quintal</Text>
-              <Text style={styles.changeGreen}>↑ ₹120</Text>
-            </View>
-          </View>
+        <Text style={styles.title}>Katol Market Prices – Top 3</Text>
 
-          {/* Soybean Item */}
-          <View style={styles.itemContainer}>
-            <Text style={styles.itemText}>Soybean (सोयाबीन)</Text>
-            <View style={styles.priceContainer}>
-              <Text style={styles.priceRed}>₹4,800/quintal</Text>
-              <Text style={styles.changeRed}>↓ ₹50</Text>
-            </View>
-          </View>
+        {loading && <ActivityIndicator size="small" />}
+        {error && <Text style={styles.error}>{error}</Text>}
 
-          {/* Wheat Item */}
-          <View style={styles.itemContainer}>
-            <Text style={styles.itemText}>Wheat (गहू)</Text>
-            <View style={styles.priceContainer}>
-              <Text style={styles.priceBlue}>₹2,100/quintal</Text>
-              <Text style={styles.changeGray}>→ Same</Text>
+        <ScrollView>
+          {data.map((item) => (
+            <View key={item.commodity} style={styles.itemContainer}>
+              <Text style={styles.itemText} numberOfLines={2} ellipsizeMode="tail">
+                {item.commodity} ({item.record.market})
+              </Text>
+              <View style={styles.priceContainer}>
+                <Text
+                  style={[styles.price, styles.priceBlue]}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                >
+                  ₹{item.highestPrice}/quintal
+                </Text>
+                <Text style={styles.change}>{item.record.arrival_date}</Text>
+              </View>
             </View>
-          </View>
-        </View>
+          ))}
+        </ScrollView>
       </View>
     );
   }
 }
 
-// Stylesheet
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#fff',
     padding: 16,
     borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 5,
     marginVertical: 8,
+    elevation: 4,
   },
   title: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#1f2937',
+    fontWeight: '700',
     marginBottom: 12,
+    color: '#1f2937',
   },
-  listContainer: {
-    // Removed unsupported 'gap', use spacing in items
+  error: {
+    color: 'red',
+    marginBottom: 8,
   },
   itemContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     backgroundColor: '#f9fafb',
     borderRadius: 6,
-    marginBottom: 12, // spacing between items
+    marginBottom: 12,
+    flexWrap: 'wrap',
   },
   itemText: {
+    flex: 1,
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '600',
     color: '#111827',
+    marginRight: 8,
   },
   priceContainer: {
+    maxWidth: '40%',
     alignItems: 'flex-end',
+    flexShrink: 1,
   },
-  priceGreen: {
-    fontWeight: 'bold',
-    color: '#16a34a',
-    fontSize: 16,
+  price: {
+    fontSize: 18,
+    fontWeight: '700',
   },
-  changeGreen: {
-    fontSize: 12,
-    color: '#22c55e',
-  },
-  priceRed: {
-    fontWeight: 'bold',
-    color: '#dc2626',
-    fontSize: 16,
-  },
-  changeRed: {
-    fontSize: 12,
-    color: '#ef4444',
-  },
-  priceBlue: {
-    fontWeight: 'bold',
-    color: '#2563eb',
-    fontSize: 16,
-  },
-  changeGray: {
-    fontSize: 12,
+  change: {
+    fontSize: 13,
+    marginTop: 2,
+    fontWeight: '500',
     color: '#6b7280',
   },
+  priceBlue: { color: '#2563eb' },
 });
 
 export default MarketPrices;

@@ -84,7 +84,7 @@ const AgroConsultantApp = () => {
           <WeatherWidget />
           <SoilWidget t={t} />
           <CropAdvice t={t} />
-          <MarketPrices t={t} />
+          <MarketPrices  />
           <QuickActions /> 
         </ScrollView>
       );
